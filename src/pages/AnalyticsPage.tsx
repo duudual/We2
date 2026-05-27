@@ -36,7 +36,7 @@ function AnalyticsPage() {
   const [excludedUsernames, setExcludedUsernames] = useState<Set<string>>(new Set())
   const [draftExcluded, setDraftExcluded] = useState<Set<string>>(new Set())
 
-  const themeMode = useThemeStore((state) => state.themeMode)
+  const chartThemeSignature = useThemeStore((state) => `${state.currentTheme}-${state.themeMode}`)
   const {
     statistics,
     rankings,
@@ -311,17 +311,42 @@ function AnalyticsPage() {
     return num.toLocaleString()
   }
 
-  const getChartLabelColors = () => {
+  const getChartTheme = () => {
     if (typeof window === 'undefined') {
-      return { text: '#333333', line: '#999999' }
+      return {
+        text: '#333333',
+        secondaryText: '#666666',
+        mutedText: '#999999',
+        line: '#e5e5e5',
+        surface: '#ffffff',
+        border: '#e5e5e5',
+        primary: '#10a37f',
+        primaryLight: 'rgba(16, 163, 127, 0.1)',
+        danger: '#ef4444',
+        warning: '#f59e0b',
+        success: '#10a37f',
+        info: '#3b82f6'
+      }
     }
     const styles = getComputedStyle(document.documentElement)
-    const text = styles.getPropertyValue('--text-primary').trim() || '#333333'
-    const line = styles.getPropertyValue('--text-tertiary').trim() || '#999999'
-    return { text, line }
+    const cssVar = (name: string, fallback: string) => styles.getPropertyValue(name).trim() || fallback
+    return {
+      text: cssVar('--text-primary', '#333333'),
+      secondaryText: cssVar('--text-secondary', '#666666'),
+      mutedText: cssVar('--text-tertiary', '#999999'),
+      line: cssVar('--border-color', '#e5e5e5'),
+      surface: cssVar('--card-inner-bg', '#ffffff'),
+      border: cssVar('--border-color', '#e5e5e5'),
+      primary: cssVar('--primary', '#10a37f'),
+      primaryLight: cssVar('--primary-light', 'rgba(16, 163, 127, 0.1)'),
+      danger: cssVar('--danger', '#ef4444'),
+      warning: cssVar('--warning', '#f59e0b'),
+      success: cssVar('--primary', '#10a37f'),
+      info: '#3b82f6'
+    }
   }
 
-  const chartLabelColors = getChartLabelColors()
+  const chartTheme = getChartTheme()
 
   const getTypeChartOption = () => {
     if (!statistics) return {}
@@ -344,7 +369,7 @@ function AnalyticsPage() {
           show: true,
           formatter: '{b}\n{d}%',
           textStyle: {
-            color: chartLabelColors.text,
+            color: chartTheme.text,
             textShadowBlur: 0,
             textShadowColor: 'transparent',
             textShadowOffsetX: 0,
@@ -355,7 +380,7 @@ function AnalyticsPage() {
         },
         labelLine: {
           lineStyle: {
-            color: chartLabelColors.line,
+            color: chartTheme.mutedText,
             shadowBlur: 0,
             shadowColor: 'transparent',
           },
@@ -367,7 +392,7 @@ function AnalyticsPage() {
             shadowOffsetY: 0,
           },
           label: {
-            color: chartLabelColors.text,
+            color: chartTheme.text,
             textShadowBlur: 0,
             textShadowColor: 'transparent',
             textBorderWidth: 0,
@@ -375,7 +400,7 @@ function AnalyticsPage() {
           },
           labelLine: {
             lineStyle: {
-              color: chartLabelColors.line,
+              color: chartTheme.mutedText,
               shadowBlur: 0,
               shadowColor: 'transparent',
             },
@@ -399,7 +424,7 @@ function AnalyticsPage() {
           show: true,
           formatter: '{b}: {c}',
           textStyle: {
-            color: chartLabelColors.text,
+            color: chartTheme.text,
             textShadowBlur: 0,
             textShadowColor: 'transparent',
             textShadowOffsetX: 0,
@@ -410,7 +435,7 @@ function AnalyticsPage() {
         },
         labelLine: {
           lineStyle: {
-            color: chartLabelColors.line,
+            color: chartTheme.mutedText,
             shadowBlur: 0,
             shadowColor: 'transparent',
           },
@@ -422,7 +447,7 @@ function AnalyticsPage() {
             shadowOffsetY: 0,
           },
           label: {
-            color: chartLabelColors.text,
+            color: chartTheme.text,
             textShadowBlur: 0,
             textShadowColor: 'transparent',
             textBorderWidth: 0,
@@ -430,7 +455,7 @@ function AnalyticsPage() {
           },
           labelLine: {
             lineStyle: {
-              color: chartLabelColors.line,
+              color: chartTheme.mutedText,
               shadowBlur: 0,
               shadowColor: 'transparent',
             },
@@ -476,10 +501,25 @@ function AnalyticsPage() {
     const showZoom = days.length > 31
 
     const zoomStart = showZoom ? Math.max(0, 100 - Math.min(100, 31 / days.length * 100)) : 0
+    const ratioBarColors = {
+      normal: chartTheme.primary,
+      high: chartTheme.warning,
+      spike: chartTheme.danger,
+      trend: chartTheme.secondaryText,
+      baseline: chartTheme.mutedText
+    }
 
     return {
       tooltip: {
         trigger: 'axis',
+        backgroundColor: chartTheme.surface,
+        borderColor: chartTheme.border,
+        textStyle: { color: chartTheme.text },
+        extraCssText: 'box-shadow: var(--shadow-md); border-radius: 8px;',
+        axisPointer: {
+          type: 'shadow',
+          shadowStyle: { color: chartTheme.primaryLight }
+        },
         formatter: (params: any) => {
           const items = Array.isArray(params) ? params : [params]
           const first = items[0]
@@ -494,12 +534,19 @@ function AnalyticsPage() {
           return lines.join('<br/>')
         }
       },
-      legend: { data: ['单日比例', '7日均线'], top: 0 },
-      grid: { left: 56, right: 24, top: 42, bottom: showZoom ? 58 : 32 },
+      legend: {
+        data: ['单日比例', '7日均线'],
+        top: 0,
+        textStyle: { color: chartTheme.secondaryText }
+      },
+      grid: { left: 56, right: 40, top: 42, bottom: showZoom ? 58 : 32 },
       xAxis: {
         type: 'category',
         data: days,
+        axisLine: { lineStyle: { color: chartTheme.line } },
+        axisTick: { lineStyle: { color: chartTheme.line } },
         axisLabel: {
+          color: chartTheme.mutedText,
           hideOverlap: true,
           formatter: (value: string) => value.slice(5)
         }
@@ -507,13 +554,37 @@ function AnalyticsPage() {
       yAxis: {
         type: 'value',
         name: '相对日均',
+        nameTextStyle: { color: chartTheme.mutedText },
+        axisLine: { show: false },
+        axisTick: { show: false },
         axisLabel: {
+          color: chartTheme.mutedText,
           formatter: '{value}%'
-        }
+        },
+        splitLine: { lineStyle: { color: chartTheme.line, type: 'dashed' } }
       },
       dataZoom: showZoom ? [
         { type: 'inside', start: zoomStart, end: 100 },
-        { type: 'slider', height: 18, bottom: 16, start: zoomStart, end: 100 }
+        {
+          type: 'slider',
+          height: 18,
+          bottom: 16,
+          start: zoomStart,
+          end: 100,
+          borderColor: chartTheme.border,
+          fillerColor: chartTheme.primaryLight,
+          handleStyle: { color: chartTheme.primary, borderColor: chartTheme.primary },
+          moveHandleStyle: { color: chartTheme.primaryLight },
+          dataBackground: {
+            lineStyle: { color: chartTheme.mutedText },
+            areaStyle: { color: chartTheme.primaryLight }
+          },
+          selectedDataBackground: {
+            lineStyle: { color: chartTheme.primary },
+            areaStyle: { color: chartTheme.primaryLight }
+          },
+          textStyle: { color: chartTheme.mutedText }
+        }
       ] : undefined,
       series: [
         {
@@ -523,17 +594,26 @@ function AnalyticsPage() {
           itemStyle: {
             color: (params: any) => {
               const value = Number(params?.value || 0)
-              if (value >= 200) return '#ff4d4f'
-              if (value >= 150) return '#faad14'
-              return '#07c160'
+              if (value >= 200) return ratioBarColors.spike
+              if (value >= 150) return ratioBarColors.high
+              return ratioBarColors.normal
             },
             borderRadius: [4, 4, 0, 0]
           },
           markLine: {
             symbol: 'none',
             data: [{ yAxis: 100, name: '日均基线' }],
-            label: { formatter: '日均基线' },
-            lineStyle: { type: 'dashed', color: '#8c8c8c' }
+            label: {
+              position: 'middle',
+              formatter: '日均基线',
+              color: chartTheme.secondaryText,
+              backgroundColor: chartTheme.surface,
+              borderColor: chartTheme.border,
+              borderWidth: 1,
+              borderRadius: 4,
+              padding: [2, 6]
+            },
+            lineStyle: { type: 'dashed', color: ratioBarColors.baseline }
           }
         },
         {
@@ -542,8 +622,8 @@ function AnalyticsPage() {
           data: movingAverage,
           smooth: true,
           showSymbol: false,
-          lineStyle: { width: 2, color: '#1989fa' },
-          itemStyle: { color: '#1989fa' }
+          lineStyle: { width: 2, color: ratioBarColors.trend },
+          itemStyle: { color: ratioBarColors.trend }
         }
       ]
     }
@@ -655,7 +735,7 @@ function AnalyticsPage() {
             <div className="chart-card"><h3>消息类型分布</h3><ReactECharts option={getTypeChartOption()} style={{ height: 300 }} /></div>
             <div className="chart-card"><h3>发送/接收比例</h3><ReactECharts option={getSendReceiveOption()} style={{ height: 300 }} /></div>
             <div className="chart-card wide"><h3>每小时消息分布</h3><ReactECharts option={getHourlyOption()} style={{ height: 250 }} /></div>
-            <div className="chart-card wide">
+            <div className="chart-card wide self-sent-ratio-card">
               <div className="chart-title-row">
                 <h3>每日自身发送强度比例</h3>
                 <span>范围：全部 · 基线：{selfSentDailyRatioData.baseline.toFixed(1)} 条/天 · 共 {formatNumber(selfSentDailyDistribution?.totalMessages || 0)} 条</span>
@@ -663,7 +743,7 @@ function AnalyticsPage() {
               <div className="chart-note">
                 比例 = 当日自身发送量 ÷ 全期每日平均自身发送量。超过 100% 表示高于本人基线
               </div>
-              <ReactECharts option={getSelfSentDailyRatioOption()} style={{ height: 320 }} />
+              <ReactECharts key={chartThemeSignature} option={getSelfSentDailyRatioOption()} style={{ height: 320 }} />
             </div>
           </div>
         </section>
