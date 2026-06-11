@@ -73,14 +73,13 @@ resources/wx_send
 pnpm-lock.yaml
 /pnpm-workspace.yaml
 wechat-research-site
-.codex
 weflow-web-offical
 /Wedecrypt
 /scripts/syncwcdb.py
 /scripts/syncWedecrypt.py
 
 # cache
-.cache/*
+cache/*
 
 # 其他
 output/

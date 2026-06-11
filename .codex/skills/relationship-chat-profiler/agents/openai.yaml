@@ -1,0 +1,7 @@
+interface:
+  display_name: "Relationship Chat Profiler"
+  short_description: "Evidence-backed chat profiling packs"
+  default_prompt: "Use $relationship-chat-profiler to turn this WeFlow chat export into a four-file relationship analysis pack."
+
+policy:
+  allow_implicit_invocation: true
